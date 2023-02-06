@@ -39,6 +39,8 @@ static struct ledc_info s_ledc_ch[LEDC_NUM_CHANS] = {{.pin = -1, .timer = -1},
                                                      {.pin = -1, .timer = -1}};
 static int s_timers_used = 0;
 
+static int fade_time = 0;
+
 static int esp32_pwm_find_ch(int pin) {
   for (int i = 0; i < LEDC_NUM_CHANS; i++) {
     if (s_ledc_ch[i].pin == pin) return i;
@@ -143,8 +145,13 @@ static bool esp32_pwm_update(int ch, int timer, int freq, int duty) {
   }
 
   if (ledc_get_duty(LEDC_MODE, ch) != duty) {
-    ledc_set_duty(LEDC_MODE, ch, duty);
-    ledc_update_duty(LEDC_MODE, ch);
+    if(fade_time == 0) {
+      ledc_set_duty(LEDC_MODE, ch, duty);
+      ledc_update_duty(LEDC_MODE, ch);
+    } else {
+      ledc_set_fade_with_time(LEDC_MODE, ch, duty, fade_time);
+      ledc_fade_start(LEDC_MODE, ch, LEDC_FADE_NO_WAIT);
+    }
   }
 
   return true;
@@ -192,4 +199,14 @@ bool mgos_pwm_set(int pin, int freq, float duty) {
   }
 
   return ret;
+}
+
+void mgos_pwm_set_fade_time(int fade_ms) {
+  if (fade_ms != 0 && fade_time == 0) {
+    ledc_fade_func_install(0);
+  }
+  if (fade_ms == 0 && fade_time != 0) {
+    ledc_fade_func_uninstall();
+  }
+  fade_time = fade_ms;
 }

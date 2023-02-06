@@ -44,6 +44,8 @@ extern "C" {
  */
 bool mgos_pwm_set(int pin, int freq, float duty);
 
+void mgos_pwm_set_fade_time(int fade_ms);
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
